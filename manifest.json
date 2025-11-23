@@ -2,20 +2,16 @@
   "name": "Nexus Calculator",
   "short_name": "Nexus",
   "description": "Calculadora del sistema Nexus con grupos G1-G4",
-  "start_url": "./",
+  "start_url": "/nexus-app/",
+  "scope": "/nexus-app/",
   "display": "standalone",
   "background_color": "#667eea",
   "theme_color": "#667eea",
   "orientation": "portrait",
   "icons": [
     {
-      "src": "icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "icon-512.png",
-      "sizes": "512x512",
+      "src": "https://cdn.jsdelivr.net/npm/emoji-datasource-apple/img/apple/64/1f52e.png",
+      "sizes": "64x64",
       "type": "image/png"
     }
   ]
