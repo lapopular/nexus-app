@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus Calculator</title>
+    <meta name="theme-color" content="#667eea">
+    <link rel="manifest" href="manifest.json">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh; padding: 20px;
+        }
+        .container { 
+            max-width: 100%; margin: 0 auto; background: white; 
+            padding: 20px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        h1 { text-align: center; color: #333; margin-bottom: 20px; }
+        .selectors { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+        select, input { padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; flex: 1; }
+        .center-line { 
+            font-family: 'Courier New', monospace; font-size: 1.3em; font-weight: bold;
+            text-align: center; margin: 15px 0; padding: 15px; background: #f8f9fa; border-radius: 8px;
+        }
+        .buttons { display: flex; gap: 10px; margin: 15px 0; }
+        button { 
+            padding: 15px; background: #667eea; color: white; border: none; 
+            border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; flex: 1;
+        }
+        button:hover {
+            background: #5a6fd8;
+        }
+        .combinaciones { 
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; 
+            margin-top: 15px; max-height: 200px; overflow-y: auto;
+        }
+        .combinacion { 
+            background: #667eea; color: white; padding: 8px 5px; 
+            border-radius: 4px; text-align: center; font-size: 0.8em;
+        }
+        .grupos-section { margin-top: 25px; padding-top: 20px; border-top: 2px solid #eee; }
+        .grupos-content { display: none; margin-top: 15px; }
+        .grupo-numeros { 
+            display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px;
+            margin: 10px 0; max-height: 150px; overflow-y: auto;
+        }
+        .grupo-input { display: flex; gap: 10px; margin-bottom: 15px; }
+        .grupo-input input { flex: 2; }
+        .grupo-input button { flex: 1; }
+        .grupo-buttons { display: flex; gap: 5px; margin: 10px 0; }
+        .grupo-buttons button { flex: 1; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔮 Nexus Calculator</h1>
+        
+        <!-- SELECTORES DE TABLAS -->
+        <div class="selectors">
+            <select id="selectorSuperior">
+                <option value="plus3">+3</option>
+                <option value="plus1">+1</option>
+                <option value="plus2">+2</option>
+                <option value="plus4">+4</option>
+                <option value="eq">EQ</option>
+            </select>
+            <select id="selectorInferior">
+                <option value="eq">EQ</option>
+                <option value="plus3">+3</option>
+                <option value="plus1">+1</option>
+                <option value="plus2">+2</option>
+                <option value="plus4">+4</option>
+            </select>
+        </div>
+
+        <!-- LÍNEA CENTRAL -->
+        <div class="center-line">
+            <input type="number" id="numeroInput" placeholder="00" min="0" max="99">
+            <span> x </span>
+            <span id="digitosFaltantes">0 1 2 3 4 5 6 7 8 9</span>
+        </div>
+
+        <!-- BOTONES -->
+        <div class="buttons">
+            <button onclick="calcularNexus()">Calcular Nexus</button>
+            <button onclick="resetear()">Reset</button>
+            <button onclick="toggleGrupos()">Ver Grupos G1-G4</button>
+        </div>
+
+        <!-- RESULTADOS NEXUS -->
+        <div id="resultadosNexus"></div>
+
+        <!-- SECCIÓN GRUPOS (EXPANDIBLE) -->
+        <div class="grupos-section">
+            <div class="grupos-content" id="gruposContent">
+                <div class="grupo-input">
+                    <input type="text" id="grupoInput" placeholder="Números: 35, 47, 08">
+                    <button onclick="verGrupo()">Buscar Grupos</button>
+                </div>
+                <div id="infoGrupo"></div>
+                <div class="grupo-buttons">
+                    <button onclick="cambiarGrupo(1)">G1</button>
+                    <button onclick="cambiarGrupo(2)">G2</button>
+                    <button onclick="cambiarGrupo(3)">G3</button>
+                    <button onclick="cambiarGrupo(4)">G4</button>
+                </div>
+                <div id="numerosGrupo" class="grupo-numeros"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // TABLAS DEL SISTEMA
+        const tablas = {
+            plus1: {0:1,1:2,2:3,3:4,4:5,5:6,6:7,7:8,8:9,9:0},
+            plus2: {0:2,1:3,2:4,3:5,4:6,5:7,6:8,7:9,8:0,9:1},
+            plus3: {0:3,1:4,2:5,3:6,4:7,5:8,6:9,7:0,8:1,9:2},
+            plus4: {0:4,1:5,2:6,3:7,4:8,5:9,6:0,7:1,8:2,9:3},
+            eq: {0:5,1:6,2:7,3:8,4:9,5:0,6:1,7:2,8:3,9:4}
+        };
+
+        // GRUPOS G1-G4
+        const grupos = {
+            g1: ['01','03','05','06','08','21','23','25','26','28','41','43','45','46','48','71','73','75','76','78','91','93','95','96','98'],
+            g2: ['00','02','04','07','09','20','22','24','27','29','40','42','44','47','49','70','72','74','77','79','90','92','94','97','99'],
+            g3: ['11','13','15','16','18','31','33','35','36','38','51','53','55','56','58','61','63','65','66','68','81','83','85','86','88'],
+            g4: ['10','12','14','17','19','30','32','34','37','39','50','52','54','57','59','60','62','64','67','69','80','82','84','87','89']
+        };
+
+        function aplicarTabla(numero, tablaKey) {
+            const digitos = numero.toString().padStart(2, '0').split('').map(Number);
+            const tabla = tablas[tablaKey];
+            return digitos.map(digito => tabla[digito] !== undefined ? tabla[digito] : digito).join('');
+        }
+
+        function calcularNexus() {
+            const input = document.getElementById('numeroInput').value;
+            const numero = parseInt(input);
+            
+            if (isNaN(numero) || numero < 0 || numero > 99) {
+                alert('Ingresa número válido (0-99)');
+                return;
+            }
+
+            const tablaSuperior = document.getElementById('selectorSuperior').value;
+            const tablaInferior = document.getElementById('selectorInferior').value;
+
+            const resultadoSuperior = aplicarTabla(numero, tablaSuperior);
+            const resultadoInferior = aplicarTabla(numero, tablaInferior);
+
+            // Calcular dígitos para combinaciones
+            const digitosUsados = new Set();
+            [resultadoSuperior, numero.toString().padStart(2, '0'), resultadoInferior].forEach(numStr => {
+                numStr.split('').forEach(digito => digitosUsados.add(parseInt(digito)));
+            });
+            
+            const digitosIzquierda = Array.from(digitosUsados);
+            const digitosFaltantes = Array.from(new Set([0,1,2,3,4,5,6,7,8,9]))
+                .filter(d => !digitosIzquierda.includes(d));
+
+            // Generar combinaciones
+            const combinaciones = [];
+            digitosIzquierda.forEach(left => {
+                digitosFaltantes.forEach(right => {
+                    combinaciones.push(left.toString() + right.toString().padStart(1, '0'));
+                });
+            });
+
+            // Mostrar resultados
+            document.getElementById('digitosFaltantes').textContent = digitosFaltantes.join(' ');
+            
+            const resultadosHTML = `
+                <div class="center-line" style="background: #e8f4fd;">${resultadoSuperior}</div>
+                <div class="center-line">${numero.toString().padStart(2, '0')} x ${digitosFaltantes.join(' ')}</div>
+                <div class="center-line" style="background: #e8f4fd;">${resultadoInferior}</div>
+                <div class="combinaciones">
+                    ${combinaciones.map(comb => 
+                        `<div class="combinacion">${comb}</div>`
+                    ).join('')}
+                </div>
+                <p style="text-align: center; margin-top: 10px; color: #666;">
+                    <strong>${combinaciones.length} combinaciones</strong>
+                </p>
+            `;
+            
+            document.getElementById('resultadosNexus').innerHTML = resultadosHTML;
+        }
+
+        function toggleGrupos() {
+            const content = document.getElementById('gruposContent');
+            content.style.display = content.style.display === 'block' ? 'none' : 'block';
+        }
+
+        function verGrupo() {
+            const input = document.getElementById('grupoInput').value;
+            
+            if (!input.trim()) {
+                alert('Ingresa números válidos (ej: 35, 47, 08)');
+                return;
+            }
+
+            // Separar números por comas y limpiar
+            const numerosInput = input.split(',')
+                .map(num => num.trim())
+                .filter(num => num !== '')
+                .map(num => {
+                    const numero = parseInt(num);
+                    return isNaN(numero) || numero < 0 || numero > 99 ? null : numero.toString().padStart(2, '0');
+                })
+                .filter(num => num !== null);
+
+            if (numerosInput.length === 0) {
+                alert('No se encontraron números válidos (0-99)');
+                return;
+            }
+
+            // Buscar grupos para cada número
+            const resultados = numerosInput.map(numeroStr => {
+                let grupoEncontrado = null;
+                for (const [grupoKey, numeros] of Object.entries(grupos)) {
+                    if (numeros.includes(numeroStr)) {
+                        grupoEncontrado = grupoKey;
+                        break;
+                    }
+                }
+                return { numero: numeroStr, grupo: grupoEncontrado };
+            });
+
+            // Mostrar resultados
+            let htmlResultados = '<div class="center-line"><strong>Resultados:</strong></div>';
+            
+            resultados.forEach(resultado => {
+                if (resultado.grupo) {
+                    htmlResultados += `<div class="center-line" style="background: #e8f5e8;">
+                        <strong>${resultado.numero}</strong> → ${resultado.grupo.toUpperCase()}
+                    </div>`;
+                } else {
+                    htmlResultados += `<div class="center-line" style="background: #ffe8e8;">
+                        <strong>${resultado.numero}</strong> → No encontrado
+                    </div>`;
+                }
+            });
+
+            // Mostrar resumen
+            const encontrados = resultados.filter(r => r.grupo).length;
+            htmlResultados += `<div class="center-line">
+                <strong>Resumen:</strong> ${encontrados}/${resultados.length} números encontrados
+            </div>`;
+
+            document.getElementById('infoGrupo').innerHTML = htmlResultados;
+
+            // Mostrar números del primer grupo encontrado (si hay)
+            const primerGrupo = resultados.find(r => r.grupo)?.grupo;
+            if (primerGrupo) {
+                mostrarNumerosGrupo(primerGrupo);
+            }
+        }
+
+        function cambiarGrupo(numGrupo) {
+            const grupoKey = 'g' + numGrupo;
+            document.getElementById('infoGrupo').innerHTML = 
+                `<div class="center-line"><strong>Grupo ${grupoKey.toUpperCase()}</strong></div>`;
+            mostrarNumerosGrupo(grupoKey);
+        }
+
+        function mostrarNumerosGrupo(grupoKey) {
+            const numeros = grupos[grupoKey];
+            document.getElementById('numerosGrupo').innerHTML = numeros
+                .map(num => `<div class="combinacion">${num}</div>`)
+                .join('');
+        }
+
+        function resetear() {
+            document.getElementById('numeroInput').value = '';
+            document.getElementById('resultadosNexus').innerHTML = '';
+            document.getElementById('digitosFaltantes').textContent = '0 1 2 3 4 5 6 7 8 9';
+            document.getElementById('gruposContent').style.display = 'none';
+        }
+
+        // Enter para calcular
+        document.getElementById('numeroInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') calcularNexus();
+        });
+
+        // Service Worker para PWA
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js')
+                .then(reg => console.log('Service Worker registrado'))
+                .catch(err => console.log('Error SW:', err));
+        }
+    </script>
+</body>
+</html>
